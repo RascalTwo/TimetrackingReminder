@@ -143,7 +143,13 @@ function App() {
         </ul>
       </section>
       <ul>
-        {events.map(e => <li key={e.start.getTime()}><span>{e.start.toLocaleTimeString()} -&gt; {e.end.toLocaleTimeString()}</span>{" "}{e.what} @ {e.task}</li>)}
+        {events.map(e =>
+          <li key={e.start.getTime()}>
+            <span>{e.start.toLocaleTimeString()} -&gt; {e.end.toLocaleTimeString()}</span>
+            {" "}{e.what} @ {e.task}
+            <button onClick={() => setEvents(events => events.filter(le => le.start !== e.start))}>Delete</button>
+          </li>
+        )}
         <li>
           <form onSubmit={e => {
             e.preventDefault();
