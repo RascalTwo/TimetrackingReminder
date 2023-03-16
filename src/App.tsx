@@ -28,14 +28,12 @@ const dateReviver = (key: string, value: any) => {
 
 
 const useLocalState = <T extends any>(key: string, defaultValue: T): [T, Dispatch<SetStateAction<T>>] => {
-  const [state, setState] = useState<T>(() => {
-    const storedValue = localStorage.getItem(key);
-    if (storedValue) {
-      return JSON.parse(storedValue, dateReviver);
-    }
+  const [state, setState] = useState<T>(defaultValue);
 
-    return defaultValue;
-  });
+  useEffect(() => {
+    const storedValue = localStorage.getItem(key);
+    setState(storedValue ? JSON.parse(storedValue, dateReviver) : defaultValue);
+  }, [key, defaultValue]);
 
   const setValueAndStore = useCallback((action: SetStateAction<T>) => setState(prevState => {
     const newState: T = typeof action === 'function' ? (action as ((prevState: T) => T))(prevState) : action;
@@ -48,8 +46,9 @@ const useLocalState = <T extends any>(key: string, defaultValue: T): [T, Dispatc
 }
 
 function App() {
-  const [events, setEvents] = useLocalState<Event[]>('events', [])
-  const [goals, setGoals] = useLocalState<Record<string, number>>('goals', {});
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const [events, setEvents] = useLocalState<Event[]>(`${date}_events`, useMemo(() => [], []))
   const lastTask = useMemo(() => events.at(-1)?.task, [events]);
 
   const blockStart = useMemo(() => {
@@ -110,73 +109,148 @@ function App() {
     }
   }, [lastTask, blockStart, blockEnd, setEvents]);
 
+  const firstEventStart = useMemo(() => events[0]?.start, [events]);
+  const lastEventStart = useMemo(() => events.at(-1)?.start, [events]);
+  const eventsAndGaps = useMemo(() => {
+    if (!firstEventStart || !lastEventStart) return [];
+
+    const eventsAndGaps: Event[] = [];
+
+    let now = new Date(firstEventStart);
+    while (now <= lastEventStart) {
+      const event = events.find(e => e.start.getTime() === now.getTime());
+      if (event) {
+        eventsAndGaps.push(event);
+        now = new Date(event.end);
+      } else {
+        if (eventsAndGaps.at(-1)?.task === 'Gap') {
+          eventsAndGaps.at(-1)!.end = new Date(now.getTime() + 1000 * 60 * 15);
+        } else {
+          eventsAndGaps.push({ start: new Date(now), end: new Date(now.getTime() + 1000 * 60 * 15), what: 'Gap', task: 'Gap' });
+        }
+        now.setMinutes(now.getMinutes() + 15);
+      }
+    }
+
+    return eventsAndGaps;
+  }, [events, firstEventStart, lastEventStart]);
+
+  const datesWithEvents = useMemo(() => {
+    const datesWithEvents: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)!;
+      if (key.endsWith('_events')) {
+        datesWithEvents.push(key.slice(0, 10));
+      }
+    }
+    return datesWithEvents;
+  }, [date]);
+
   return (
     <main>
+      <section>
+        <h1>Tasks</h1>
+        <sup>{date}</sup>
+      </section>
+
+      <form key={date} onSubmit={e => {
+        e.preventDefault();
+        const newDate = (e.currentTarget.elements[0] as HTMLInputElement).value;
+        setDate(newDate);
+      }}>
+        <fieldset>
+          <legend>Date Selector</legend>
+          <input type="text" defaultValue={date} list="dates-with-events-list" pattern="\d{4}-\d{2}-\d{2}" required />
+          <datalist id="dates-with-events-list">
+            {datesWithEvents.map(date =>
+              <option key={date} value={date} />
+            )}
+          </datalist>
+          <br />
+          <button>Update</button>
+        </fieldset>
+      </form>
+
+      <table>
+        <caption>Task Totals</caption>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(eventsAndGaps.reduce((tasks, event) => {
+            tasks[event.task] = (tasks[event.task] || 0) + ((event.end.getTime() - event.start.getTime()) / 1000 / 60 / 60);
+            return tasks;
+          }, {} as Record<string, number>)).map(([task, hours]) =>
+            <tr key={task}>
+              <td>{task}</td>
+              <td>{hours}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
       <div>
+        <h2>Current Time Block</h2>
         {blockStart.toLocaleTimeString()} -&gt; {blockEnd.toLocaleTimeString()}
         <br />
         <div>{Math.floor(secondsRemaining / 60)}m{Math.floor(secondsRemaining % 60)}s</div>
       </div>
-      <section>
-        <h1>Goals</h1>
-        <ul>
-          {Object.entries(goals).map(([task, hours]) => {
-            const completedMinutes = events.filter(e => e.task === task).reduce((acc, e) => acc + (e.end.getTime() - e.start.getTime()) / 1000 / 60, 0);
-            const completedHours = completedMinutes / 60;
-            return (
-              <li key={task}>
-                {task} - <input type="number" min="0" value={hours} onChange={e => setGoals(goals => ({ ...goals, [task]: e.target.valueAsNumber }))} /> - {completedHours.toFixed(2)} ({(completedHours / hours * 100).toFixed(2)}%) <button onClick={() => setGoals(({ [task]: _, ...leftoverGoals }) => leftoverGoals)}>Delete</button>
-              </li>
-            )
-          })}
-          <li>
-            <button onClick={() => {
-              const task = prompt("Name?");
-              if (!task) return;
+      <table>
+        <caption>Events & Gaps</caption>
+        <thead>
+          <tr>
+            <th>Start</th>
+            <th>Duration</th>
+            <th>End</th>
+            <th>Task</th>
+            <th>What</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {eventsAndGaps.map(e =>
+            <tr key={e.start.getTime()}>
+              <td>{e.start.toLocaleTimeString()}</td>
+              <td>{Math.floor((e.end.getTime() - e.start.getTime()) / 1000 / 60 / 60).toString().padStart(2, '0')}:{Math.floor((e.end.getTime() - e.start.getTime()) / 1000 / 60 % 60).toString().padStart(2, '0')}</td>
+              <td>{e.end.toLocaleTimeString()}</td>
+              <td>{e.task}</td>
+              <td>{e.what}</td>
+              {e.task !== 'Gap' ? <td>
+                <button onClick={() => setEvents(events => events.filter(le => le.start !== e.start))}>Delete</button>
+              </td> : null}
+            </tr>
+          )}
+        </tbody>
+      </table>
+      <form onSubmit={e => {
+        e.preventDefault();
 
-              const hours = prompt("Hours?");
-              if (!hours || isNaN(+hours)) return;
+        const start = new Date();
+        start.setHours(+e.currentTarget.start.value.split(":")[0]);
+        start.setMinutes(+e.currentTarget.start.value.split(":")[1]);
+        start.setSeconds(0);
+        start.setMilliseconds(0);
 
-              setGoals(goals => ({ ...goals, [task]: +hours }));
-            }}>New Goal</button>
-          </li>
-        </ul>
-      </section>
-      <ul>
-        {events.map(e =>
-          <li key={e.start.getTime()}>
-            <span>{e.start.toLocaleTimeString()} -&gt; {e.end.toLocaleTimeString()}</span>
-            {" "}{e.what} @ {e.task}
-            <button onClick={() => setEvents(events => events.filter(le => le.start !== e.start))}>Delete</button>
-          </li>
-        )}
-        <li>
-          <form onSubmit={e => {
-            e.preventDefault();
+        const end = new Date();
+        end.setHours(+e.currentTarget.end.value.split(":")[0]);
+        end.setMinutes(+e.currentTarget.end.value.split(":")[1]);
+        end.setSeconds(0);
+        end.setMilliseconds(0);
 
-            const start = new Date();
-            start.setHours(+e.currentTarget.start.value.split(":")[0]);
-            start.setMinutes(+e.currentTarget.start.value.split(":")[1]);
-            start.setSeconds(0);
-            start.setMilliseconds(0);
+        createEvent(start, end);
+      }} key={events.length}>
+        <fieldset>
+          <legend>New Event</legend>
+          <input type="time" name="start" defaultValue={blockStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} />
+          -&gt;
+          <input type="time" name="end" defaultValue={blockEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} />
 
-            const end = new Date();
-            end.setHours(+e.currentTarget.end.value.split(":")[0]);
-            end.setMinutes(+e.currentTarget.end.value.split(":")[1]);
-            end.setSeconds(0);
-            end.setMilliseconds(0);
-
-            createEvent(start, end);
-          }} key={events.length}>
-            <input type="time" name="start" defaultValue={blockStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} />
-            -&gt;
-            <input type="time" name="end" defaultValue={blockEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} />
-
-            <button type="submit">Add Event</button>
-          </form>
-
-        </li>
-      </ul>
+          <button type="submit">Add</button>
+        </fieldset>
+      </form>
     </main>
   )
 }
