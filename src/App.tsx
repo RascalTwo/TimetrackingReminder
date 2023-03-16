@@ -114,6 +114,14 @@ function App() {
   const eventsAndGaps = useMemo(() => {
     if (!firstEventStart || !lastEventStart) return [];
 
+    if (firstEventStart === lastEventStart){
+      if (blockStart.getTime() === events[0].end.getTime()) return events;
+      return [
+        ...events,
+        { start: new Date(firstEventStart.getTime() + 1000 * 60 * 15), end: blockStart, what: 'Gap', task: 'Gap'}
+      ]
+    }
+
     const eventsAndGaps: Event[] = [];
 
     let now = new Date(firstEventStart);
