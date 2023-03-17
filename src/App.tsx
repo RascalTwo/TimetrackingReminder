@@ -37,7 +37,6 @@ const useLocalState = <T extends any>(key: string, defaultValue: T): [T, Dispatc
 
   const setValueAndStore = useCallback((action: SetStateAction<T>) => setState(prevState => {
     const newState: T = typeof action === 'function' ? (action as ((prevState: T) => T))(prevState) : action;
-    console.log(newState);
     localStorage.setItem(key, JSON.stringify(newState, dateReplacer));
     return newState
   }), [setState])
@@ -48,8 +47,9 @@ const useLocalState = <T extends any>(key: string, defaultValue: T): [T, Dispatc
 function App() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const [events, setEvents] = useLocalState<Event[]>(`${date}_events`, useMemo(() => [], []))
-  const lastTask = useMemo(() => events.at(-1)?.task, [events]);
+  const [events, setEvents] = useLocalState<Event[]>(`${date}_events`, useMemo(() => [], []));
+  const lastEvent = useMemo(() => events.at(-1), [events]);
+  const lastTask = useMemo(() => lastEvent?.task, [lastEvent]);
 
   const blockStart = useMemo(() => {
     const blockStart = new Date();
@@ -81,6 +81,8 @@ function App() {
   }, [blockEnd, setSecondsRemaining]);
 
   const createEvent = useCallback((start: Date, end: Date) => {
+    if (start.getTime() > end.getTime()) return alert('Start time must be before End time');
+
     const task = lastTask && confirm(`Did you do ${lastTask}?`)
       ? lastTask
       : prompt("What task were you working on?")!;
@@ -96,7 +98,7 @@ function App() {
       end,
       what: what!,
       task,
-    }]);
+    }].sort((a, b) => a.start.getTime() - b.start.getTime()));
   }, [setEvents, lastTask])
 
   useEffect(() => {
@@ -110,7 +112,7 @@ function App() {
   }, [lastTask, blockStart, blockEnd, setEvents]);
 
   const firstEventStart = useMemo(() => events[0]?.start, [events]);
-  const lastEventStart = useMemo(() => events.at(-1)?.start, [events]);
+  const lastEventStart = useMemo(() => lastEvent?.start, [lastEvent]);
   const eventsAndGaps = useMemo(() => {
     if (!firstEventStart || !lastEventStart) return [];
 
@@ -118,7 +120,7 @@ function App() {
       if (blockStart.getTime() === events[0].end.getTime()) return events;
       return [
         ...events,
-        { start: new Date(firstEventStart.getTime() + 1000 * 60 * 15), end: blockStart, what: 'Gap', task: 'Gap'}
+        { start: new Date(firstEventStart.getTime() + 1000 * 60 * REMINDER_INTERVAL), end: blockStart, what: 'Gap', task: 'Gap'}
       ]
     }
 
@@ -132,11 +134,11 @@ function App() {
         now = new Date(event.end);
       } else {
         if (eventsAndGaps.at(-1)?.task === 'Gap') {
-          eventsAndGaps.at(-1)!.end = new Date(now.getTime() + 1000 * 60 * 15);
+          eventsAndGaps.at(-1)!.end = new Date(now.getTime() + 1000 * 60 * REMINDER_INTERVAL);
         } else {
-          eventsAndGaps.push({ start: new Date(now), end: new Date(now.getTime() + 1000 * 60 * 15), what: 'Gap', task: 'Gap' });
+          eventsAndGaps.push({ start: new Date(now), end: new Date(now.getTime() + 1000 * 60 * REMINDER_INTERVAL), what: 'Gap', task: 'Gap' });
         }
-        now.setMinutes(now.getMinutes() + 15);
+        now.setMinutes(now.getMinutes() + REMINDER_INTERVAL);
       }
     }
 
@@ -163,7 +165,7 @@ function App() {
 
       <form key={date} onSubmit={e => {
         e.preventDefault();
-        const newDate = (e.currentTarget.elements[0] as HTMLInputElement).value;
+        const newDate = e.currentTarget.querySelector('input')!.value;
         setDate(newDate);
       }}>
         <fieldset>
