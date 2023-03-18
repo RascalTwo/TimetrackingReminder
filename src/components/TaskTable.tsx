@@ -14,6 +14,10 @@ export default function TaskTable({ events }: { events: R2Event[] }) {
         <td>Total</td>
         <td>{events.reduce((total, event) => total + ((event.end.getTime() - event.start.getTime()) / 1000 / 60 / 60), 0)}</td>
       </tr>
+      <tr>
+        <td>Total (Gapless)</td>
+        <td>{events.filter(e => e.task !== 'Gap').reduce((total, event) => total + ((event.end.getTime() - event.start.getTime()) / 1000 / 60 / 60), 0)}</td>
+      </tr>
       {Object.entries(events.reduce((tasks, event) => {
         tasks[event.task] = (tasks[event.task] || 0) + ((event.end.getTime() - event.start.getTime()) / 1000 / 60 / 60);
         return tasks;
