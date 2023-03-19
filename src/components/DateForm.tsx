@@ -26,6 +26,15 @@ export default function DateForm({ date, setDate }: { date: string, setDate: Rea
       </datalist>
       <br />
       <button>Update</button>
+      <br/>
+      <button type="button" onClick={() => navigator.clipboard.writeText(localStorage.getItem(date + '_events')!).then(() => alert('Copied to clipboard'))}>Export</button>
+      <button type="button" onClick={() => {
+        const newEvents = prompt('Paste new events JSON');
+        if (newEvents) {
+          localStorage.setItem(date + '_events', newEvents);
+          window.location.reload();
+        }
+      }}>Import</button>
     </fieldset>
   </form>
 }
