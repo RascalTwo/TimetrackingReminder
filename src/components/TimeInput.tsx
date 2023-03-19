@@ -1,6 +1,6 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo } from 'react';
 
-import { dateToHHMM, disableScrolling, enableScrolling, setDateHoursAndMinutes, updateTimeOnWheel } from "../functions";
+import { dateToHHMM, disableScrolling, enableScrolling, setDateHoursAndMinutes, updateTimeOnWheel } from '../functions';
 
 export default memo(function TimeInput({ defaultDateValue, dateValue, onDateChange, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { defaultDateValue?: Date, dateValue?: Date, onDateChange?: (date: Date) => void }) {
   const onChange = useMemo(() => onDateChange ? (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,5 +24,5 @@ export default memo(function TimeInput({ defaultDateValue, dateValue, onDateChan
     onMouseEnter={disableScrolling}
     onMouseLeave={enableScrolling}
     {...props}
-  />
+  />;
 });

@@ -1,4 +1,4 @@
-import type { R2Event } from "../types";
+import type { R2Event } from '../types';
 
 export default function TaskTable({ events }: { events: R2Event[] }) {
   return <table>
@@ -28,5 +28,5 @@ export default function TaskTable({ events }: { events: R2Event[] }) {
         </tr>
       )}
     </tbody>
-  </table>
+  </table>;
 }

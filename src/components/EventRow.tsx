@@ -1,8 +1,8 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
-import TimeInput from "./TimeInput";
+import TimeInput from './TimeInput';
 
-import type { R2Event } from "../types";
+import type { R2Event } from '../types';
 
 export default memo(function EventRow({ event: origEvent, deleteEvent, setEventEditing, updateEvent }: { event: R2Event, deleteEvent: (start: Date) => void, setEventEditing: (start: Date, editing: boolean) => void, updateEvent: (event: R2Event) => void }) {
   const [event, setEvent] = useState(() => ({ ...origEvent }));
@@ -16,7 +16,7 @@ export default memo(function EventRow({ event: origEvent, deleteEvent, setEventE
 
   const onStartChange = useCallback((start: Date) => setEvent(event => ({ ...event, start })), [setEvent]);
   const onEndChange = useCallback((end: Date) => setEvent(event => ({ ...event, end })), [setEvent]);
-  const onTextChange = useCallback(({ currentTarget: { name, value } }: React.ChangeEvent<HTMLInputElement>) => setEvent(event => ({ ...event, [name]: value })), [setEvent])
+  const onTextChange = useCallback(({ currentTarget: { name, value } }: React.ChangeEvent<HTMLInputElement>) => setEvent(event => ({ ...event, [name]: value })), [setEvent]);
 
   return <tr>
     {event.editing ? <>
@@ -35,12 +35,12 @@ export default memo(function EventRow({ event: origEvent, deleteEvent, setEventE
       </td>
       {event.task !== 'Gap' ? <td>
         <button onClick={() => {
-          setEventEditing(event.start, false)
-          setEvent({ ...origEvent })
+          setEventEditing(event.start, false);
+          setEvent({ ...origEvent });
         }}>Cancel</button>
         <button onClick={() => {
           if (event.start.getTime() >= event.end.getTime()) return alert('Start time must be before end time');
-          updateEvent({ ...event, editing: false })
+          updateEvent({ ...event, editing: false });
         }}>Save</button>
       </td> : null}
     </> : <>
@@ -54,5 +54,5 @@ export default memo(function EventRow({ event: origEvent, deleteEvent, setEventE
         <button onClick={() => setEventEditing(event.start, true)}>Edit</button>
       </td> : null}
     </>}
-  </tr>
+  </tr>;
 });

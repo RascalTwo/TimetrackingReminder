@@ -1,8 +1,8 @@
-import { useCallback } from "react";
+import { useCallback } from 'react';
 
-import EventRow from "./EventRow";
+import EventRow from './EventRow';
 
-import type { R2Event } from "../types";
+import type { R2Event } from '../types';
 
 export default function EventsTable({ events, setEvents }: { events: R2Event[], setEvents: React.Dispatch<React.SetStateAction<R2Event[]>> }) {
   const deleteEvent = useCallback((start: Date) => setEvents(events => events.filter(event => event.start.getTime() !== start.getTime())), [setEvents]);
@@ -31,5 +31,5 @@ export default function EventsTable({ events, setEvents }: { events: R2Event[], 
         />
       )}
     </tbody>
-  </table>
+  </table>;
 }

@@ -1,19 +1,19 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react';
 
-import { REMINDER_INTERVAL } from './constants'
+import { REMINDER_INTERVAL } from './constants';
 
-import DateForm from './components/DateForm'
-import NewEventForm from './components/NewEventForm'
-import EventsTable from './components/EventsTable'
-import CurrentEventCountdown from './components/CurrentEventCountdown'
-import TaskTable from './components/TaskTable'
+import DateForm from './components/DateForm';
+import NewEventForm from './components/NewEventForm';
+import EventsTable from './components/EventsTable';
+import CurrentEventCountdown from './components/CurrentEventCountdown';
+import TaskTable from './components/TaskTable';
 
-import useLocalState from './hooks/useLocalState'
-import useCountdownTimer from './hooks/useCountdownTimer'
+import useLocalState from './hooks/useLocalState';
+import useCountdownTimer from './hooks/useCountdownTimer';
 
-import './App.css'
+import './App.css';
 
-import type { R2Event } from './types'
+import type { R2Event } from './types';
 
 
 function App() {
@@ -49,7 +49,7 @@ function App() {
 
     const task = lastTask && confirm(`Did you do ${lastTask}?`)
       ? lastTask
-      : prompt("What task were you working on?")!;
+      : prompt('What task were you working on?');
     if (!task) return false;
 
     let what: string | null = null;
@@ -58,17 +58,18 @@ function App() {
     setEvents(events => [...events, {
       start,
       end,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       what: what!,
       task,
       editing: false
     }].sort((a, b) => a.start.getTime() - b.start.getTime()));
     return true;
-  }, [setEvents, lastTask])
+  }, [setEvents, lastTask]);
 
   const secondsRemaining = useCountdownTimer(blockEnd, useCallback(() => {
     if (!createEvent(blockStart, blockEnd)) {
       setEvents(events => [...events]);
-    };
+    }
   }, [blockStart, blockEnd, createEvent, setEvents]));
 
   const allEvents = useMemo((): R2Event[] => {
@@ -81,7 +82,7 @@ function App() {
       return [
         ...events,
         { start: new Date(firstEventStart.getTime() + 1000 * 60 * REMINDER_INTERVAL), end: blockStart, what: 'Gap', task: 'Gap', editing: false }
-      ]
+      ];
     }
 
     const allEvents: R2Event[] = [];
@@ -93,8 +94,9 @@ function App() {
         allEvents.push(event);
         now = new Date(event.end);
       } else {
-        if (allEvents.at(-1)?.task === 'Gap') {
-          allEvents.at(-1)!.end = new Date(now.getTime() + 1000 * 60 * REMINDER_INTERVAL);
+        const latestEvent = allEvents.at(-1);
+        if (latestEvent?.task === 'Gap') {
+          latestEvent.end = new Date(now.getTime() + 1000 * 60 * REMINDER_INTERVAL);
         } else {
           allEvents.push({ start: new Date(now), end: new Date(now.getTime() + 1000 * 60 * REMINDER_INTERVAL), what: 'Gap', task: 'Gap', editing: false });
         }
@@ -103,7 +105,7 @@ function App() {
     }
 
     return allEvents;
-  }, [events]);
+  }, [blockStart, events]);
 
   return (
     <main>
@@ -118,7 +120,7 @@ function App() {
       <EventsTable events={allEvents} setEvents={setEvents} />
       <NewEventForm key={events.length} defaultStartDateValue={blockStart} defaultEndDateValue={blockEnd} createEvent={createEvent} />
     </main>
-  )
+  );
 }
 
-export default App
+export default App;

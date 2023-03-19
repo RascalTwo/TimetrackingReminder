@@ -1,18 +1,20 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo } from 'react';
 
 export default function DateForm({ date, setDate }: { date: string, setDate: React.Dispatch<React.SetStateAction<string>> }) {
   const datesWithEvents = useMemo(() => {
     const datesWithEvents: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)!;
-      if (key.endsWith('_events')) {
+      const key = localStorage.key(i);
+      if (key?.endsWith('_events')) {
         datesWithEvents.push(key.slice(0, 10));
       }
     }
     return datesWithEvents;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
   return <form key={date} onSubmit={useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const newDate = e.currentTarget.querySelector('input')!.value;
     setDate(newDate);
   }, [setDate])}>
@@ -27,6 +29,7 @@ export default function DateForm({ date, setDate }: { date: string, setDate: Rea
       <br />
       <button>Update</button>
       <br/>
+      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
       <button type="button" onClick={() => navigator.clipboard.writeText(localStorage.getItem(date + '_events')!).then(() => alert('Copied to clipboard'))}>Export</button>
       <button type="button" onClick={() => {
         const newEvents = prompt('Paste new events JSON');
@@ -36,5 +39,5 @@ export default function DateForm({ date, setDate }: { date: string, setDate: Rea
         }
       }}>Import</button>
     </fieldset>
-  </form>
+  </form>;
 }

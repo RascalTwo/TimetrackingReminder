@@ -1,4 +1,4 @@
-import { REMINDER_INTERVAL } from "./constants";
+import { REMINDER_INTERVAL } from './constants';
 
 export const setDateHoursAndMinutes = (date: Date, hoursAndMinutes: string) => {
   const [hours, minutes] = hoursAndMinutes.split(':').map(Number);
@@ -7,7 +7,7 @@ export const setDateHoursAndMinutes = (date: Date, hoursAndMinutes: string) => {
   date.setSeconds(0);
   date.setMilliseconds(0);
   return date;
-}
+};
 
 
 export const updateTimeOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
@@ -18,12 +18,12 @@ export const updateTimeOnWheel = (e: React.WheelEvent<HTMLInputElement>) => {
 
   const newValue = dateToHHMM(date);
   e.currentTarget.value = newValue;
-  return newValue
-}
+  return newValue;
+};
 
 const setScrolling = (scrolling: boolean) => {
   document.body.style.overflow = scrolling ? 'auto' : 'hidden';
-}
+};
 
 export const disableScrolling = () => setScrolling(false);
 export const enableScrolling = () => setScrolling(true);

@@ -4,5 +4,5 @@ export default function CurrentEventCountdown({ start, end, secondsRemaining }: 
     {start.toLocaleTimeString()} -&gt; {end.toLocaleTimeString()}
     <br />
     <div>{Math.floor(secondsRemaining / 60)}m{Math.floor(secondsRemaining % 60)}s</div>
-  </div>
+  </div>;
 }
