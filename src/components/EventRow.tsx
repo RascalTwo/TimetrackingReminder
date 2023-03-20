@@ -4,7 +4,7 @@ import TimeInput from './TimeInput';
 
 import type { R2Event } from '../types';
 
-export default memo(function EventRow({ event: origEvent, deleteEvent, setEventEditing, updateEvent }: { event: R2Event, deleteEvent: (start: Date) => void, setEventEditing: (start: Date, editing: boolean) => void, updateEvent: (event: R2Event) => void }) {
+export default memo(function EventRow({ baseDate, event: origEvent, deleteEvent, setEventEditing, updateEvent }: { baseDate: Date, event: R2Event, deleteEvent: (start: Date) => void, setEventEditing: (start: Date, editing: boolean) => void, updateEvent: (event: R2Event) => void }) {
   const [event, setEvent] = useState(() => ({ ...origEvent }));
   useEffect(() => setEvent(origEvent), [origEvent]);
 
@@ -21,11 +21,11 @@ export default memo(function EventRow({ event: origEvent, deleteEvent, setEventE
   return <tr>
     {event.editing ? <>
       <td>
-        <TimeInput dateValue={event.start} onDateChange={onStartChange} />
+        <TimeInput baseDate={baseDate} dateValue={event.start} onDateChange={onStartChange} />
       </td>
       <td>{durationString}</td>
       <td>
-        <TimeInput dateValue={event.end} onDateChange={onEndChange} />
+        <TimeInput baseDate={baseDate} dateValue={event.end} onDateChange={onEndChange} />
       </td>
       <td>
         <input type="text" value={event.task} onChange={onTextChange} name="task" />

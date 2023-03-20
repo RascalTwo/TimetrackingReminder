@@ -18,12 +18,21 @@ import type { R2Event } from './types';
 
 function App() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  const todayDate = useMemo(() => {
+    const [year, month, day] = date.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }, [date]);
+  const isToday = useMemo(() => new Date().toISOString().slice(0, 10) === date, [date]);
+
 
   const [events, setEvents] = useLocalState<R2Event[]>(`${date}_events`, useMemo(() => [], []));
   const lastTask = useMemo(() => events.at(-1)?.task, [events]);
 
   const blockStart = useMemo(() => {
-    const blockStart = new Date();
+    const blockStart = new Date(todayDate);
+    blockStart.setHours(new Date().getHours());
     blockStart.setMinutes(blockStart.getMinutes() - blockStart.getMinutes() % REMINDER_INTERVAL);
     blockStart.setSeconds(0);
     blockStart.setMilliseconds(0);
@@ -33,7 +42,7 @@ function App() {
     }
 
     return blockStart;
-  }, [events]);
+  }, [todayDate, events]);
 
   const blockEnd = useMemo(() => {
     const blockEnd = new Date(blockStart);
@@ -66,11 +75,13 @@ function App() {
     return true;
   }, [setEvents, lastTask]);
 
-  const secondsRemaining = useCountdownTimer(blockEnd, useCallback(() => {
-    if (!createEvent(blockStart, blockEnd)) {
-      setEvents(events => [...events]);
-    }
-  }, [blockStart, blockEnd, createEvent, setEvents]));
+  const secondsRemaining = useCountdownTimer(
+    useMemo(() => isToday ? blockEnd : new Date(blockEnd.getTime() + 1000 * 60 * 60 * 24 * 365), [isToday, blockEnd]),
+    useMemo(() => isToday ? () => {
+      if (!createEvent(blockStart, blockEnd)) {
+        setEvents(events => [...events]);
+      }
+    } : undefined, [isToday, blockStart, blockEnd, createEvent, setEvents]));
 
   const allEvents = useMemo((): R2Event[] => {
     const firstEventStart = events[0]?.start;
@@ -116,9 +127,9 @@ function App() {
 
       <DateForm date={date} setDate={setDate} />
       <TaskTable events={allEvents} />
-      <CurrentEventCountdown start={blockStart} end={blockEnd} secondsRemaining={secondsRemaining} />
-      <EventsTable events={allEvents} setEvents={setEvents} />
-      <NewEventForm key={events.length} defaultStartDateValue={blockStart} defaultEndDateValue={blockEnd} createEvent={createEvent} />
+      {isToday ? <CurrentEventCountdown start={blockStart} end={blockEnd} secondsRemaining={secondsRemaining} /> : null}
+      <EventsTable todayDate={todayDate} events={allEvents} setEvents={setEvents} />
+      <NewEventForm key={events.length} todayDate={todayDate} defaultStartDateValue={blockStart} defaultEndDateValue={blockEnd} createEvent={createEvent} />
     </main>
   );
 }
